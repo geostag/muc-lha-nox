@@ -1,0 +1,154 @@
+#!/usr/bin/env python
+
+import pandas as pd
+import os, json, re
+
+datadir = os.getenv("datadir")
+
+targetfile = f"{datadir}/data.json"
+
+def parse_zeitreihe(zeit_spalte):
+    # als String behandeln
+    s = zeit_spalte.astype(str)
+
+    # Fälle mit 24:00 finden
+    mask = s.str.contains("24:00", na=False)
+
+    # normale Zeiten direkt parsen
+    result = pd.to_datetime(s[~mask], dayfirst=True, errors="coerce")
+
+    # 24:00 → +1 Tag, 00:00
+    if mask.any():
+        s_2400 = s[mask].str.replace("24:00", "00:00")
+        parsed = pd.to_datetime(s_2400, dayfirst=True, errors="coerce")
+        parsed += pd.Timedelta(days=1)
+        result = pd.concat([result, parsed])
+
+    return result.sort_index()
+
+def lade_altes_format(file):
+    print(f"lade (alt) {file}")
+    pfad = f"{datadir}/{file}"
+    df = pd.read_excel(pfad, header=None)
+    
+    # relevante Daten ab Zeile 4
+    df = df.iloc[3:].copy()
+    
+    # Spalten extrahieren
+    orte = df.iloc[:, 0].astype(str).str.replace(" ", "", regex=False)
+    datum = pd.to_datetime(df.iloc[:, 2], dayfirst=True, errors="coerce")
+    stundenwerte = df.iloc[:, 3:27]  # D bis AA
+    
+    # Stunden (0–23)
+    stunden = list(range(stundenwerte.shape[1]))
+    
+    rows = []
+
+    for i in range(len(df)):
+        ort = orte.iloc[i]
+        tag = datum.iloc[i]
+        
+        if pd.isna(tag) or pd.isna(ort):
+            continue
+        
+        for h, wert in zip(stunden, stundenwerte.iloc[i]):
+            zeit = tag + pd.Timedelta(hours=h)
+            
+            rows.append((zeit, ort, wert))
+    
+    # DataFrame bauen
+    long_df = pd.DataFrame(rows, columns=["zeit", "ort", "wert"])
+    
+    # Pivot → gleiche Struktur wie vorher
+    result = long_df.pivot_table(
+        index="zeit",
+        columns="ort",
+        values="wert",
+        aggfunc="first"
+    )
+    
+    return result
+
+def lade_datei(file):
+    print(f"lade (neu) {file}")
+    pfad = f"{datadir}/{file}"
+
+    df = pd.read_excel(pfad, header=None)
+    
+    # Orte (Zeile 2)
+    orte = df.iloc[1, 1:].astype(str).str.replace(" ", "", regex=False)
+    
+    # Daten ab Zeile 3 (bei Monats Dateien ab Zeile 4)
+    if ist_monatsdaten(file):
+        daten = df.iloc[3:].copy()
+    else:
+        daten = df.iloc[2:].copy()
+    
+    zeiten = parse_zeitreihe(daten.iloc[:, 0])
+    werte = daten.iloc[:, 1:]
+    
+    werte.columns = orte
+    werte.index = zeiten
+
+    werte = werte.T.groupby(level=0).first().T
+
+    return werte
+
+class jsonEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj,datetime):
+            return obj.isoformat()
+        
+        else:
+            return json.JSONEncoder.default(self, obj)
+
+def ist_alt(f):
+    pattern = r"^NO2_19\d{2}\.xlsx$"
+    return bool(re.match(pattern, f))
+    
+def ist_neu(f):
+    pattern = r"^NO2_2\d{3}.*\.xlsx$"
+    return bool(re.match(pattern, f))
+
+def ist_monatsdaten(f):
+    pattern = r"^NO2_2\d{3}_\d{2}\.xlsx$"
+    return bool(re.match(pattern, f))
+
+dateien = []
+alte_dateien = []
+
+for f in sorted(os.listdir(datadir)):
+    if ist_alt(f):
+        alte_dateien.append(f)
+
+    elif ist_neu(f):
+        dateien.append(f)
+
+
+adfs = [lade_altes_format(f) for f in alte_dateien]
+dfs = [lade_datei(f) for f in dateien]
+
+for i, df in enumerate(adfs + dfs):
+    if not df.index.is_unique:
+        print(f"DF {i}: Index (Zeit) NICHT eindeutig")
+    if not df.columns.is_unique:
+        print(f"DF {i}: Spalten (Orte) NICHT eindeutig")
+        df = df.loc[:, ~df.columns.duplicated()]
+
+gesamt_df = pd.concat(adfs+dfs)
+
+# Zeitstempel sortieren (Index)
+gesamt_df = gesamt_df.sort_index()
+
+# Ortsnamen sortieren (Spalten)
+gesamt_df = gesamt_df.sort_index(axis=1)
+
+gesamt_df.index = gesamt_df.index.strftime("%Y-%m-%dT%H:%M:%S")
+
+result = {
+    ort: gesamt_df[ort].dropna().to_dict()
+    for ort in gesamt_df.columns
+}
+
+with open(targetfile,"w") as f:
+    f.write(json.dumps(result,indent=2, cls=jsonEncoder))

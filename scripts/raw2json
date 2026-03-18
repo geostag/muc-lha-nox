@@ -1,0 +1,116 @@
+#!/usr/bin/env python
+
+import os, json, re, openpyxl
+
+datadir = os.getenv("datadir")
+
+targetfiledaily = f"{datadir}/data-daily.json"
+targetfilemonthly = f"{datadir}/data-monthly.json"
+
+files = [ f"{datadir}/{f}" for f in sorted(os.listdir(datadir)) if re.match(r"^NO2_\d{4}(_\d{2})?.xlsx$",f) ]
+
+class totalData:
+    def __init__(self):
+        self.data = {}
+
+    def add(self,location,date,value):
+        match = re.match(r"^(\d+)\.(\d+)\.(\d{4})$",date)
+        if match:
+            date = "%04d-%02d-%02d" % (int(match.group(3)),int(match.group(2)),int(match.group(1)))
+
+        location = location.replace(' ','')
+        if not location in self.data:
+            self.data[location] = {}
+
+        self.data[location][date] = value
+
+    def getMonthly(self):
+        datam = {}
+        for (l,dvs) in self.data.items():
+            datevalues = {}
+            for (date,value) in dvs.items():
+                m = date[5:7]
+                y = date[0:4]
+                date = f"{y}-{m}"
+                if not date in datevalues:
+                    datevalues[date] = { "v": 0, "n": 0 }
+
+                datevalues[date]["v"] += value
+                datevalues[date]["n"] += 1
+
+            datam[l] = {}
+            for (date,i) in datevalues.items():
+                datam[l][date] = i["v"] / i["n"]
+
+        return datam
+                
+
+class pre2000:
+    def __init__(self,td):
+        self.td = td
+
+    def addline(self,r):
+        location = r[0]
+        date = r[2]
+        d = [ v for v in r[3:27] if v ]
+        self.td.add(location,date,sum(d) / len(d) if len(d) > 0 else 0)
+
+    def finish(self):
+        return True
+
+class from2000:
+    def __init__(self,td,r):
+        self.td = td
+        self.locations = r[1:]
+        self.lastdate = "-"
+        self.collector = []
+
+    def purge(self,date):
+        tranposed = [*zip(*self.collector)]
+        c = 0
+        for row in tranposed:
+            row = [ x for x in row if isinstance(x,int) or isinstance(x,float) ]
+            self.td.add(self.locations[c],date,sum(row)/len(row) if len(row) > 0 else 0)
+            c += 1
+
+        self.collector = []
+        self.lastdate = "-"
+
+    def addline(self,r):
+        date = r[0][:10]
+        if date != self.lastdate and self.collector:
+            self.purge(self.lastdate)
+
+        self.lastdate = date
+        self.collector.append(r[1:])
+
+    def finish(self):
+        self.purge(self.lastdate)
+        return True
+
+
+TD = totalData()
+for f in files:
+    print(f)
+    book = openpyxl.load_workbook(f)
+    sheet = book.active
+
+    D = None
+    for row in sheet.iter_rows(values_only=True):
+        row = list(row)
+        if not D and row[0] == "Station" and row[2] == "Datum":
+            D = pre2000(TD)
+
+        elif not D and row[0] == "Zeitpunkt":
+            D = from2000(TD,row)
+
+        elif D:
+            D.addline(row)
+
+    D.finish()
+
+with open(targetfiledaily,"w", encoding="utf-8") as f:
+    json.dump(TD.data,f,indent=2,sort_keys=True)
+
+with open(targetfilemonthly,"w", encoding="utf-8") as f:
+    json.dump(TD.getMonthly(),f,indent=2,sort_keys=True)
