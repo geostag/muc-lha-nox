@@ -1,7 +1,7 @@
 # muc-lha-nox
 visualization of NOx values in Bavaria (you might know about the Landshuter Allee...).
 
-Raw data ist crawled from https://inters.bayern.de/luft/messwertarchiv/NO2_*
+Raw data ist crawled from https://www.lfu.bayern.de/luft/immissionsmessungen/messwerte/index.htm
 
 # how to create it
 ```
@@ -10,7 +10,7 @@ Raw data ist crawled from https://inters.bayern.de/luft/messwertarchiv/NO2_*
 crawl-data
 # extract and create json from ist
 raw2json
-# put everything together and create a html page 
+# put everything together and create a html page Landesamt
 createHtml
 ```
 Look at the result in your favorite browser: file:///data/monthly.html
