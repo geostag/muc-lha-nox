@@ -75,7 +75,7 @@
         let x = 0;
         for( const m of months ){
             const v = no2[location][m] ?? -1;
-            const v1 = Math.round(v*100)/100;
+            const v1 = v >= 0 ? Math.round(v*100)/100 : "-";
             const c = v >= 0 ? value2color(v) : '#eeeeee;';
             const x1 = Math.trunc(x);
             locationdiv.append(`<div class="slot" title="${location} ${m}: ${v1}" style="background-color: ${c}; left: ${x1}px; width: ${sw}px; height: ${sh}px;"></div>`)
