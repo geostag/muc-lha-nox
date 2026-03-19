@@ -5,10 +5,11 @@ Raw data ist crawled from https://www.lfu.bayern.de/luft/immissionsmessungen/mes
 
 # how to create it
 ```
+# prepare environment (python3 needed)
 . env.sh
 # get the data
 crawl-data
-# extract and create json from ist
+# extract and create json from raw data
 raw2json
 # put everything together and create a html page Landesamt
 createHtml
