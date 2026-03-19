@@ -1,0 +1,89 @@
+<html>
+    <head>
+        <title>NO2 Bayern monthly</title>
+        <style type="text/css">
+            #heatmap {
+                position: relative;
+            }
+            .location {
+                position: absolute;
+            }
+            .slot {
+                position: absolute;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="heatmap" style="width: 100%; height: 95vh;">
+
+        </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script type="text/javascript">
+
+    NO2NO2NO2
+
+    function generateColorPalette(steps) {
+        const colors = [];
+        for (let i = 0; i < steps; i++) {
+            const ratio = i / (steps - 1);
+            // Hue 120 (green) → 0 (red)
+            const hue = 120 - (120 * ratio);
+            colors.push(`hsl(${hue}, 100%, 50%)`);
+        }
+
+        return colors;
+    }
+    function maxval(d){
+        let max = -1;
+        for( const l in d ){
+            for( const m in d[l] ){
+                if( d[l][m] > max ){
+                    max = d[l][m];
+                }
+            }
+        }
+        return max;
+    }
+
+    let monthsmap = {}
+    for( let location in no2 ){
+        for( let m in no2[location] ){
+            monthsmap[m] = 1
+        }
+    }
+
+    const months = Object.keys(monthsmap).sort();
+    const colorsteps = 100;
+    const palette = generateColorPalette(colorsteps);
+    const maxvalue = maxval(no2);
+    const value2color = (v) => { return palette[Math.trunc(colorsteps*v/maxvalue)] }
+
+    // geometry
+    const div = $('#heatmap');
+    const w = div.width();
+    const h = div.height();
+    const location_number = Object.keys(no2).length;
+    const sh = Math.trunc( h / location_number );
+    const sw = Math.trunc( w / months.length );
+
+    let y = 0;
+    for( const location in no2 ){
+        const y1 = Math.trunc(y);
+        const locationdiv = $(`<div class="location" style="top: ${y1}px;"></div>`);
+        div.append(locationdiv);
+        let x = 0;
+        for( const m of months ){
+            const v = no2[location][m] ?? -1;
+            const v1 = Math.round(v*100)/100;
+            const c = v >= 0 ? value2color(v) : '#eeeeee;';
+            const x1 = Math.trunc(x);
+            locationdiv.append(`<div class="slot" title="${location} ${m}: ${v1}" style="background-color: ${c}; left: ${x1}px; width: ${sw}px; height: ${sh}px;"></div>`)
+            x += sw;
+        }
+        y += sh; 
+    }
+
+    </script>
+    </body>
+</html>

@@ -24,7 +24,12 @@ class totalData:
 
         self.data[location][date] = value
 
-    def getMonthly(self):
+    @property
+    def dataDaily(self):
+        return self.data
+    
+    @property
+    def dataMonthly(self):
         datam = {}
         for (l,dvs) in self.data.items():
             datevalues = {}
@@ -44,7 +49,6 @@ class totalData:
 
         return datam
                 
-
 class pre2000:
     def __init__(self,td):
         self.td = td
@@ -77,6 +81,9 @@ class from2000:
         self.lastdate = "-"
 
     def addline(self,r):
+        if r[0] == "0/0":
+            return
+        
         date = r[0][:10]
         if date != self.lastdate and self.collector:
             self.purge(self.lastdate)
@@ -87,7 +94,6 @@ class from2000:
     def finish(self):
         self.purge(self.lastdate)
         return True
-
 
 TD = totalData()
 for f in files:
@@ -110,7 +116,7 @@ for f in files:
     D.finish()
 
 with open(targetfiledaily,"w", encoding="utf-8") as f:
-    json.dump(TD.data,f,indent=2,sort_keys=True)
+    json.dump(TD.dataDaily,f,indent=2,sort_keys=True, ensure_ascii=False)
 
 with open(targetfilemonthly,"w", encoding="utf-8") as f:
-    json.dump(TD.getMonthly(),f,indent=2,sort_keys=True)
+    json.dump(TD.dataMonthly,f,indent=2,sort_keys=True, ensure_ascii=False)
