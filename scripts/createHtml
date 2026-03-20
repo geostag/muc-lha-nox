@@ -2,7 +2,7 @@
 
 import os
 srcfile = os.path.join(os.getenv("htmldir"),"index.html")
-tgtfile = os.path.join(os.getenv("datadir"),"monthly.html")
+tgtfile = os.path.join(os.getenv("docsdir"),"monthly.html")
 datafile = os.path.join(os.getenv("datadir"),"data-monthly.json")
 
 with open(srcfile,"r") as s:

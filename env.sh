@@ -5,6 +5,7 @@ export bindir="${basedir}/scripts"
 export datadir="${basedir}/data"
 export penvdir="${basedir}/penv"
 export htmldir="${basedir}/html"
+export docsdir="${basedir}/docs"
 chmod 750 ${bindir}
 export PATH=${PATH}:${bindir}
 

@@ -23,17 +23,27 @@
 
     NO2NO2NO2
 
-    function generateColorPalette(steps) {
-        const colors = [];
-        for (let i = 0; i < steps; i++) {
-            const ratio = i / (steps - 1);
-            // Hue 120 (green) → 0 (red)
-            const hue = 120 - (120 * ratio);
-            colors.push(`hsl(${hue}, 100%, 50%)`);
-        }
+function generateColorPalette(steps) {
+    const colors = [];
 
-        return colors;
+    for (let i = 0; i < steps; i++) {
+        const ratio = i / (steps - 1);
+
+        if (ratio <= 0.75) {
+            // Phase 1: grün → gelb → rot
+            const t = ratio / 0.75; // auf 0–1 skalieren
+            const hue = 120 - (120 * t);
+            colors.push(`hsl(${hue}, 100%, 50%)`);
+        } else {
+            // Phase 2: rot → schwarz
+            const t = (ratio - 0.75) / 0.25; // 0–1
+            const lightness = 50 * (1 - t); // 50% → 0%
+            colors.push(`hsl(0, 100%, ${lightness}%)`);
+        }
     }
+
+    return colors;
+}
     function maxval(d){
         let max = -1;
         for( const l in d ){
@@ -57,7 +67,16 @@
     const colorsteps = 100;
     const palette = generateColorPalette(colorsteps);
     const maxvalue = maxval(no2);
-    const value2color = (v) => { return palette[Math.trunc(colorsteps*v/maxvalue)] }
+    const value2color = (v) => { 
+        // 40 is legal threshold --> 0.8 * colorsteps
+        const t = 0.5;
+        if( v <= 40 ){
+            return palette[Math.trunc(t*colorsteps*v/40)]
+        }else {
+            return palette[Math.trunc(t*colorsteps + (1-t)*colorsteps*(v-40)/(maxvalue-40))]
+        }
+        //return palette[Math.trunc(colorsteps*v/maxvalue)] 
+    }
 
     // geometry
     const div = $('#heatmap');
