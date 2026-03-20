@@ -17,3 +17,5 @@ createHtml
 Look at the result in your favorite browser: file:///data/monthly.html
 
 ![screenshot](/screenshot.png "screenshot")
+
+checkout https://geostag.github.io/muc-lha-nox/monthly.html for an online version.
