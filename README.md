@@ -3,7 +3,7 @@ visualization of NOx values in Bavaria (you might know about the Landshuter Alle
 
 Raw data ist crawled from https://www.lfu.bayern.de/luft/immissionsmessungen/messwerte/index.htm
 
-Checkout https://geostag.github.io/muc-lha-nox/monthly.html for an online version of the result.
+Checkout https://geostag.github.io/muc-lha-nox/monthly.html or https://geostag.github.io/muc-lha-nox/yearly.html for an online version of the result.
 
 # how to create it
 ```

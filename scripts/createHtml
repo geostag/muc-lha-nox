@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 
 import os
-srcfile = os.path.join(os.getenv("htmldir"),"index.html")
-tgtfile = os.path.join(os.getenv("docsdir"),"monthly.html")
-datafile = os.path.join(os.getenv("datadir"),"data-monthly.json")
 
-with open(srcfile,"r") as s:
-    with open(datafile,"r") as d:
-        with open(tgtfile,"w") as t:
-            data = d.read()
-            t.write(s.read().replace('NO2NO2NO2',f"no2 = {data}"))
+for tag in ["month","year"]:
+    srcfile = os.path.join(os.getenv("htmldir"),f"{tag}ly.html")
+    tgtfile = os.path.join(os.getenv("docsdir"),f"{tag}ly.html")
+    datafile = os.path.join(os.getenv("datadir"),f"data-{tag}ly.json")
+
+    with open(srcfile,"r") as s:
+        with open(datafile,"r") as d:
+            with open(tgtfile,"w") as t:
+                print(f"creating {tgtfile}")
+                data = d.read()
+                t.write(s.read().replace('NO2NO2NO2',f"no2 = {data}"))
+

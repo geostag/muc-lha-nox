@@ -4,8 +4,9 @@ import os, json, re, openpyxl
 
 datadir = os.getenv("datadir")
 
-targetfiledaily = f"{datadir}/data-daily.json"
+targetfiledaily   = f"{datadir}/data-daily.json"
 targetfilemonthly = f"{datadir}/data-monthly.json"
+targetfileyearly  = f"{datadir}/data-yearly.json"
 
 files = [ f"{datadir}/{f}" for f in sorted(os.listdir(datadir)) if re.match(r"^NO2_\d{4}(_\d{2})?.xlsx$",f) ]
 #files = [ "/home/georg/muc-lha-nox/data/NO2_2025.xlsx" ]
@@ -49,7 +50,26 @@ class totalData:
                 datam[l][date] = i["v"] / i["n"]
 
         return datam
-                
+
+    @property
+    def dataYearly(self):
+        datam = {}
+        for (l,dvs) in self.data.items():
+            datevalues = {}
+            for (date,value) in dvs.items():
+                date = date[0:4]
+                if not date in datevalues:
+                    datevalues[date] = { "v": 0, "n": 0 }
+
+                datevalues[date]["v"] += value
+                datevalues[date]["n"] += 1
+
+            datam[l] = {}
+            for (date,i) in datevalues.items():
+                datam[l][date] = i["v"] / i["n"]
+
+        return datam
+
 class pre2000:
     def __init__(self,td):
         self.td = td
@@ -123,3 +143,6 @@ with open(targetfiledaily,"w", encoding="utf-8") as f:
 
 with open(targetfilemonthly,"w", encoding="utf-8") as f:
     json.dump(TD.dataMonthly,f,indent=2,sort_keys=True, ensure_ascii=False)
+
+with open(targetfileyearly,"w", encoding="utf-8") as f:
+    json.dump(TD.dataYearly,f,indent=2,sort_keys=True, ensure_ascii=False)
