@@ -8,6 +8,7 @@ targetfiledaily = f"{datadir}/data-daily.json"
 targetfilemonthly = f"{datadir}/data-monthly.json"
 
 files = [ f"{datadir}/{f}" for f in sorted(os.listdir(datadir)) if re.match(r"^NO2_\d{4}(_\d{2})?.xlsx$",f) ]
+#files = [ "/home/georg/muc-lha-nox/data/NO2_2025.xlsx" ]
 
 class totalData:
     def __init__(self):
@@ -74,8 +75,9 @@ class from2000:
         c = 0
         for row in tranposed:
             row = [ x for x in row if isinstance(x,int) or isinstance(x,float) ]
-            self.td.add(self.locations[c],date,sum(row)/len(row) if len(row) > 0 else 0)
-            c += 1
+            if self.locations[c] is not None:
+                self.td.add(self.locations[c],date,sum(row)/len(row) if len(row) > 0 else 0)
+                c += 1
 
         self.collector = []
         self.lastdate = "-"
@@ -111,6 +113,7 @@ for f in files:
             D = from2000(TD,row)
 
         elif D:
+            #print(row)
             D.addline(row)
 
     D.finish()
